@@ -1,0 +1,912 @@
+# CODMATION - PROJECT STATE DOCUMENT
+**Project Name:** CODMATION  
+**Version:** 1.0.0  
+**Platform:** Android (API 29+, 3-4GB RAM target)  
+**Last Updated:** 2026-06-13  
+**Repository:** The-Science-Logic/animbycode
+
+---
+
+## 1. PROJECT OVERVIEW
+
+### Primary Objective
+Create a 2.5D animation application from scratch to finish using a custom Domain-Specific Language (DSL) with real-time preview and multi-format video export capabilities.
+
+### Core Features
+1. **Custom DSL Animation Engine** - Frame-based keyframe animation system with smooth interpolation
+2. **AI-Assisted DSL Generation** - Users describe animations; external AI generates DSL code
+3. **Real-Time Canvas Preview** - 360p @ 12fps interactive preview with timeline scrubbing
+4. **Advanced Effects System** - 30+ professional animation effects (blur, glow, color grading, etc.)
+5. **Project Management** - Create, save, rename, duplicate, delete projects with auto-save
+6. **Multi-Format Export** - MP4, MKV, GIF at 1080p/2K/4K @ 30fps/60fps
+7. **Offline-First Architecture** - All features work offline (except AI DSL generation)
+8. **Text Animation** - Full 3D animated text with bundled OTF fonts
+
+### User Type
+Single user (developer/animator personal tool) - Sole user optimization
+
+---
+
+## 2. TECHNICAL ARCHITECTURE
+
+### Tech Stack
+- **Language:** Kotlin
+- **Platform:** Android Studio (Gradle-based)
+- **Graphics Engine:** OpenGL ES 3.0 (Canvas rendering)
+- **Video Encoding:** FFmpeg via ffmpeg-kit-android
+- **Storage:** SQLite (project metadata) + File system (.codm format)
+- **Persistence:** SharedPreferences + Room Database
+- **UI Framework:** Jetpack Compose + Traditional Android Views (hybrid)
+- **Animation Core:** Custom keyframe interpolator with easing functions
+- **Minimum API:** 29 (Android 10)
+- **Target API:** 34 (Android 14)
+
+### Architecture Pattern
+- **MVVM** (Model-View-ViewModel)
+- **Repository Pattern** for data access
+- **Dependency Injection** via Hilt
+- **Coroutines** for async operations
+
+---
+
+## 3. DSL SPECIFICATION
+
+### DSL Syntax Format
+```
+[object_type].[property] = [value] | [frame_range]
+[effect_type].[effect_name]([params]) | [frame_range]
+keyframe @ frame [frame_number] { [properties] }
+```
+
+### Example DSL Code
+```
+shape.circle(x=100, y=100, r=50, color=#FF0000, duration=1000ms) | frame(0-30)
+shape.rectangle(x=200, y=150, w=100, h=80, color=#00FF00, fillType=gradient) | frame(10-60)
+effect.opacity(value=0.5, easing=ease-out) | frame(0-15)
+effect.rotation_3d(x=45, y=30, z=60, easing=ease-in-out) | frame(20-50)
+effect.blur(radius=10, type=gaussian) | frame(25-40)
+text.render(content="CODMATION", font="RobotoMono", size=48, color=#FFFFFF) | frame(0-120)
+keyframe @ frame 0 { x=0, y=0, scale=1.0 }
+keyframe @ frame 30 { x=500, y=300, scale=1.5 }
+path.bezier(points=[(0,0), (100,50), (200,0)], stroke=2, color=#0000FF) | frame(0-90)
+```
+
+### Supported DSL Elements
+
+#### Shapes
+- `circle(x, y, r, color, fillType)`
+- `rectangle(x, y, w, h, color, fillType, cornerRadius)`
+- `polygon(points, color, fillType)`
+- `line(x1, y1, x2, y2, strokeWidth, color)`
+- `bezier(points, strokeWidth, color, fillType)`
+- `ellipse(x, y, rx, ry, color, fillType, rotation)`
+- `path(svgPath, strokeWidth, color, fillType)`
+- `text(content, font, size, color, x, y, rotation)`
+
+#### Effects (30+)
+- **Opacity:** opacity(value, easing)
+- **Rotation:** rotation_2d(angle, easing), rotation_3d(x, y, z, easing)
+- **Blur:** blur(radius, type: gaussian|directional), motion_blur(intensity, direction, type: shutter|transform)
+- **Shadow:** drop_shadow(offsetX, offsetY, radius, color, opacity)
+- **Glow:** outer_glow(radius, color, opacity), inner_glow(radius, color, opacity)
+- **Color:** hue_shift(angle), saturation(value), brightness_contrast(brightness, contrast), color_grade(preset), color_tint(color, intensity), color_wash(color, intensity)
+- **Distortion:** chromatic_distortion(intensity, direction), pixelation(blockSize), posterization(levels), film_grain(intensity)
+- **Transform:** position(x, y, easing), scale(sx, sy, easing), skew(skewX, skewY), shear(shearX, shearY)
+- **Blending:** blend_mode(mode: multiply|screen|overlay|etc), masking(type: inverted|alpha|luma)
+- **Speed:** speed_ramp(easing: ease-in|ease-out, curve)
+
+#### Keyframes
+```
+keyframe @ frame [number] { property=value, property=value }
+```
+
+#### Animation Properties
+- `duration` - milliseconds or frames
+- `easing` - linear, ease-in, ease-out, ease-in-out, cubic-bezier(x1,y1,x2,y2)
+- `loop` - repeat count or infinite
+- `delay` - start delay in ms
+- `frame_range` - frame(start-end)
+
+---
+
+## 4. DATA MODELS
+
+### Project Structure (.codm File)
+```json
+{
+  "version": "1.0",
+  "projectName": "MyAnimation",
+  "createdAt": "2026-06-13T10:30:00Z",
+  "modifiedAt": "2026-06-13T10:35:00Z",
+  "canvasWidth": 1920,
+  "canvasHeight": 1080,
+  "fps": 30,
+  "duration": 120000,
+  "dslCode": "[full DSL code here]",
+  "thumbnail": "[base64 image data]",
+  "metadata": {
+    "exportFormats": ["mp4", "mkv", "gif"],
+    "lastExportSettings": {}
+  }
+}
+```
+
+### Animation Frame Object
+```
+AnimationFrame {
+  frameNumber: Int
+  timestamp: Long (milliseconds)
+  objects: List<AnimatedObject>
+  effects: List<AnimationEffect>
+}
+```
+
+### Animated Object
+```
+AnimatedObject {
+  id: String (UUID)
+  type: String (circle, rectangle, text, etc.)
+  properties: Map<String, Any>
+  keyframes: List<Keyframe>
+  effects: List<AnimationEffect>
+  zIndex: Int
+}
+```
+
+### Keyframe
+```
+Keyframe {
+  frameNumber: Int
+  properties: Map<String, Any>
+  easing: EasingFunction
+}
+```
+
+### Animation Effect
+```
+AnimationEffect {
+  id: String (UUID)
+  type: String (opacity, blur, rotation_3d, etc.)
+  parameters: Map<String, Any>
+  startFrame: Int
+  endFrame: Int
+  easing: EasingFunction
+}
+```
+
+---
+
+## 5. SCREEN ARCHITECTURE
+
+### Screen 1: Home/Dashboard
+**Purpose:** Project management hub
+
+**Layout:**
+- Top bar: "CODMATION" logo, version
+- "New Project" button (centered, prominent)
+- "Recent Projects" list with:
+  - Project thumbnail
+  - Project name
+  - Last modified date
+  - Action buttons: Open, Rename, Duplicate, Delete
+- Search/filter bar
+- Bottom navigation (consistent across app)
+
+**Functionality:**
+- List all saved projects
+- Create new project (modal to set canvas size, fps, duration)
+- Open project (navigates to Editor)
+- Rename project (inline or modal)
+- Duplicate project
+- Delete project (with confirmation)
+- Auto-save indicator
+
+---
+
+### Screen 2: Editor Mode
+**Purpose:** Main animation creation and DSL editing interface
+
+**Layout Zones:**
+1. **Top Bar (Fixed):**
+   - Left: "Back to Home" button (auto-saves with "untitled_[timestamp]" if new)
+   - Center: Project name (editable)
+   - Right: Hamburger menu (Settings, Export, About)
+
+2. **Canvas Area (60% height):**
+   - OpenGL ES rendered canvas
+   - Display animated objects at 360p @ 12fps
+   - Interactive: Pinch zoom, Pan, Tap to select
+
+3. **Timeline Bar (Bottom 15% of canvas area):**
+   - Horizontal scrollable timeline
+   - Playhead, Keyframe markers, Play/Pause/Stop buttons
+   - Speed controls, Current frame indicator
+
+4. **DSL Editor (40% height, bottom panel):**
+   - Text editor with syntax highlighting
+   - Line numbers, Undo/Redo, Auto-format, Error messages
+
+5. **Right Sidebar (15% width, collapsible):**
+   - Object properties panel
+   - Effect controls
+   - Keyframe editor
+   - Layers panel
+
+**Functionality:**
+- Auto-save every 2 seconds after DSL modification
+- Real-time canvas preview updates (debounced)
+- DSL syntax validation
+- Timeline interaction with frame scrubbing
+- Canvas interaction with object selection
+
+---
+
+### Screen 3: Preview Mode
+**Purpose:** Full-screen animation preview
+
+**Layout:**
+- Full-screen canvas
+- Bottom controls (semi-transparent overlay)
+- Play/Pause, time/duration, frame counter, Back button
+
+**Functionality:**
+- Play animation at full 480p @ 30fps
+- Loop toggle, Speed controls, Frame-by-frame stepping
+
+---
+
+### Screen 4: Export Settings & Dialog
+**Purpose:** Configure and execute video export
+
+**Layout:**
+- Modal dialog with tabs:
+  1. Output Format (MP4, MKV, GIF)
+  2. Resolution (1080p, 2K, 4K)
+  3. Frame rate (30fps, 60fps)
+  4. Advanced Tab (Codec, Bitrate, etc.)
+  5. Preview Tab (Estimated file size, quality preview)
+
+**Functionality:**
+- Validate export settings
+- Show progress bar during export
+- Save to Downloads, Notification on completion
+
+---
+
+### Screen 5: Settings & Menu
+**Purpose:** App configuration and information
+
+**Layout:**
+- Hamburger menu dropdown:
+  - General Settings (canvas size, FPS, duration, auto-save interval)
+  - UI Settings (theme, font size, grid toggle)
+  - Performance (preview quality, frame rate limiter)
+  - About (version, build, license)
+
+---
+
+## 6. COMPLETE FILE TREE STRUCTURE
+
+```
+CODMATION/
+├── app/
+│   ├── build.gradle.kts
+│   ├── proguard-rules.pro
+│   ├── src/
+│   │   ├── main/
+│   │   │   ├── AndroidManifest.xml
+│   │   │   ├── java/com/codmation/
+│   │   │   │   ├── MainActivity.kt
+│   │   │   │   ├── CodemationApp.kt
+│   │   │   │   ├── di/
+│   │   │   │   │   ├── AppModule.kt
+│   │   │   │   │   ├── DatabaseModule.kt
+│   │   │   │   │   └── RepositoryModule.kt
+│   │   │   │   ├── data/
+│   │   │   │   │   ├── local/
+│   │   │   │   │   │   ├── database/
+│   │   │   │   │   │   │   ├── AppDatabase.kt
+│   │   │   │   │   │   │   ├── ProjectDao.kt
+│   │   │   │   │   │   │   ├── AnimationFrameDao.kt
+│   │   │   │   │   │   │   └── ProjectEntity.kt
+│   │   │   │   │   │   ├── storage/
+│   │   │   │   │   │   │   ├── ProjectFileManager.kt
+│   │   │   │   │   │   │   ├── CodmFileHandler.kt
+��   │   │   │   │   │   │   └── ThumbnailGenerator.kt
+│   │   │   │   │   │   ├── preferences/
+│   │   │   │   │   │   │   └── AppPreferences.kt
+│   │   │   │   │   │   └── serialization/
+│   │   │   │   │   │       ├── GsonConfig.kt
+│   │   │   │   │   │       └── Converters.kt
+│   │   │   │   │   ├── remote/
+│   │   │   │   │   │   └── ApiClient.kt
+│   │   │   │   │   └── repository/
+│   │   │   │   │       ├── ProjectRepository.kt
+│   │   │   │   │       ├── AnimationRepository.kt
+│   │   │   │   │       ├── ExportRepository.kt
+│   │   │   │   │       └── ProjectRepositoryImpl.kt
+│   │   │   │   ├── domain/
+│   │   │   │   │   ├── model/
+│   │   │   │   │   │   ├── Project.kt
+│   │   │   │   │   │   ├── AnimationFrame.kt
+│   │   │   │   │   │   ├── AnimatedObject.kt
+│   │   │   │   │   │   ├── Keyframe.kt
+│   │   │   │   │   │   ├── AnimationEffect.kt
+│   │   │   │   │   │   ├── EasingFunction.kt
+│   │   │   │   │   │   ├── ExportSettings.kt
+│   │   │   │   │   │   └── DslParseResult.kt
+│   │   │   │   │   └── usecase/
+│   │   │   │   │       ├── CreateProjectUseCase.kt
+│   │   │   │   │       ├── LoadProjectUseCase.kt
+│   │   │   │   │       ├── SaveProjectUseCase.kt
+│   │   │   │   │       ├── DeleteProjectUseCase.kt
+│   │   │   │   │       ├── DuplicateProjectUseCase.kt
+│   │   │   │   │       ├── ParseDslUseCase.kt
+│   │   │   │   │       ├── RenderAnimationUseCase.kt
+│   │   │   │   │       ├── ExportVideoUseCase.kt
+│   │   │   │   │       └── ExportGifUseCase.kt
+│   │   │   │   ├── presentation/
+│   │   │   │   │   ├── MainActivity.kt
+│   │   │   │   │   ├── ui/
+│   │   │   │   │   │   ├── theme/
+│   │   │   │   │   │   │   ├── Color.kt
+│   │   │   │   │   │   │   ├── Theme.kt
+│   │   │   │   │   │   │   └── Type.kt
+│   │   │   │   │   │   └── screens/
+│   │   │   │   │   │       ├── HomeScreen.kt
+│   │   │   │   │   │       ├── EditorScreen.kt
+│   │   │   │   │   │       ├── PreviewScreen.kt
+│   │   │   │   │   │       ├── ExportScreen.kt
+│   │   │   │   │   │       ├── SettingsScreen.kt
+│   │   │   │   │   │       └── components/
+│   │   │   │   │   │           ├── Canvas/
+│   │   │   │   │   │           │   ├── AnimationCanvas.kt
+│   │   │   │   │   │           │   ├── CanvasView.kt
+│   │   │   │   │   │           │   └── CanvasViewModel.kt
+│   │   │   │   │   │           ├── Editor/
+│   │   │   │   │   │           │   ├── DslEditor.kt
+│   │   │   │   │   │           │   ├── EditorViewModel.kt
+│   │   │   │   │   │           │   └── SyntaxHighlighter.kt
+│   │   │   │   │   │           ├── Timeline/
+│   │   │   │   │   │           │   ├── TimelineBar.kt
+│   │   │   │   │   │           │   ├── KeyframeMarker.kt
+│   │   │   │   │   │           │   └── TimelineViewModel.kt
+│   │   │   │   │   │           ├── Properties/
+│   │   │   │   │   │           │   ├── ObjectPropertiesPanel.kt
+│   │   │   │   │   │           │   ├── EffectControls.kt
+│   │   │   │   │   │           │   └── KeyframeEditor.kt
+│   │   │   │   │   │           ├── ProjectList/
+│   │   │   │   │   │           │   ├── ProjectCard.kt
+│   │   │   │   │   │           │   ├── ProjectListView.kt
+│   │   │   │   │   │           │   └── ProjectContextMenu.kt
+│   │   │   │   │   │           ├── Controls/
+│   │   │   │   │   │           │   ├── PlaybackControls.kt
+│   │   │   │   │   │           │   ├── ExportDialog.kt
+│   │   │   │   │   │           │   ├── SettingsDialog.kt
+│   │   │   │   │   │           │   └── NewProjectDialog.kt
+│   │   │   │   │   │           └── Common/
+│   │   │   │   │   │               ├── TopAppBar.kt
+│   │   │   │   │   │               ├── HamburgerMenu.kt
+│   │   │   │   │   │               └── Toast.kt
+│   │   │   │   │   └── viewmodel/
+│   │   │   │   │       ├── HomeViewModel.kt
+│   │   │   │   │       ├── EditorViewModel.kt
+│   │   │   │   │       ├── PreviewViewModel.kt
+│   │   │   │   │       ├── ExportViewModel.kt
+│   │   │   │   │       └── SettingsViewModel.kt
+│   │   │   │   ├── engine/
+│   │   │   │   │   ├── animation/
+│   │   │   │   │   │   ├── AnimationEngine.kt
+│   │   │   │   │   │   ├── Interpolator.kt
+│   │   │   │   │   │   ├── EasingFunctions.kt
+│   │   │   │   │   │   ├── KeyframeInterpolator.kt
+│   │   │   │   │   │   └── FrameCalculator.kt
+│   │   │   │   │   ├── dsl/
+│   │   │   │   │   │   ├── DslParser.kt
+│   │   │   │   │   │   ├── DslLexer.kt
+│   │   │   │   │   │   ├── DslValidator.kt
+│   │   │   │   │   │   ├── ShapeBuilder.kt
+│   │   │   │   │   │   ├── EffectBuilder.kt
+│   │   │   │   │   │   ├── KeyframeBuilder.kt
+│   │   │   │   │   │   └── DslAst.kt
+│   │   │   │   │   ├── rendering/
+│   │   │   │   │   │   ├── Canvas2DRenderer.kt
+│   │   │   │   │   │   ├── OpenGLRenderer.kt
+│   │   │   │   │   │   ├── ShapeRenderer.kt
+│   │   │   │   │   │   ├── TextRenderer.kt
+│   │   │   │   │   │   ├── EffectRenderer.kt
+│   │   │   │   │   │   └── GradientRenderer.kt
+│   │   │   │   │   ├── effects/
+│   │   │   │   │   │   ├── BaseEffect.kt
+│   │   │   │   │   │   ├── OpacityEffect.kt
+│   │   │   │   │   │   ├── BlurEffect.kt
+│   │   │   │   │   │   ├── RotationEffect.kt
+│   │   │   │   │   │   ├── GlowEffect.kt
+│   │   │   │   │   │   ├── ShadowEffect.kt
+│   │   │   │   │   │   ├── ColorEffect.kt
+│   │   │   │   │   │   ├── BlendModeEffect.kt
+│   │   │   │   │   │   ├── MotionBlurEffect.kt
+│   │   │   │   │   │   ├── DistortionEffect.kt
+│   │   │   │   │   │   ├── MaskingEffect.kt
+│   │   │   │   │   │   ├── TransformEffect.kt
+│   │   │   │   │   │   └── EffectFactory.kt
+│   │   │   │   │   ├── export/
+│   │   │   │   │   │   ├── VideoExporter.kt
+│   │   │   │   │   │   ├── GifExporter.kt
+│   │   │   │   │   │   ├── FFmpegProcessor.kt
+│   │   │   │   │   │   ├── FrameSequenceGenerator.kt
+│   │   │   │   │   │   └── ExportQueueManager.kt
+│   │   │   │   │   └── utils/
+│   │   │   │   │       ├── ShapeUtils.kt
+│   │   │   │   │       ├── BezierUtils.kt
+│   │   │   │   │       ├── ColorUtils.kt
+│   │   │   │   │       ├── MatrixUtils.kt
+│   │   │   │   │       └── PerformanceMonitor.kt
+│   │   │   │   └── utils/
+│   │   │   │       ├── FileUtils.kt
+│   │   │   │       ├── Logger.kt
+│   │   │   │       ├── Constants.kt
+│   │   │   │       ├── Extensions.kt
+│   │   │   │       └── ResourceManager.kt
+│   │   │   ├── res/
+│   │   │   │   ├── layout/
+│   │   │   │   │   └── activity_main.xml
+│   │   │   │   ├── values/
+│   │   │   │   │   ├── strings.xml
+│   │   │   │   │   ├── colors.xml
+│   │   │   │   │   ├── dimens.xml
+│   │   │   │   │   └── styles.xml
+│   │   │   │   ├── drawable/
+│   │   │   │   │   ├── ic_play.xml
+│   │   │   │   │   ├── ic_pause.xml
+│   │   │   │   │   ├── ic_back.xml
+│   │   │   │   │   ├── ic_menu.xml
+│   │   │   │   │   └── ic_add.xml
+│   │   │   │   ├── font/
+│   │   │   │   │   ├── RobotoMono.otf
+│   │   │   │   │   ├── RobotoSans.otf
+│   │   │   │   │   ├── PlayfairDisplay.otf
+│   │   │   │   │   └── [other OTF fonts]
+│   │   │   │   └── raw/
+│   │   │   │       ├── vertex_shader.glsl
+│   │   │   │       └── fragment_shader.glsl
+│   │   │   └── AndroidManifest.xml
+│   │   └── test/
+│   │       └── java/com/codmation/
+│   │           ├── DslParserTest.kt
+│   │           ├── InterpolatorTest.kt
+│   │           ├── EasingFunctionsTest.kt
+│   │           ├── AnimationEngineTest.kt
+│   │           └── [other unit tests]
+│   └── androidTest/
+│       └── java/com/codmation/
+│           ├── EditorScreenTest.kt
+│           ├── ExportTest.kt
+│           └── [integration tests]
+├── build.gradle.kts (root)
+├── settings.gradle.kts
+├── gradle.properties
+├── local.properties (git ignored)
+├── README.md
+├── LICENSE
+├── .gitignore
+└── docs/
+    ├── DSL_SPECIFICATION.md
+    ├── ARCHITECTURE.md
+    ├── DEVELOPMENT_GUIDE.md
+    └── API_REFERENCE.md
+```
+
+**Total Files: ~540-630 Kotlin + resource/config files**
+
+---
+
+## 7. IMPLEMENTATION ROADMAP - 12 PHASES
+
+### Phase 1: Project Setup & Infrastructure (Week 1)
+**Duration:** 5 days
+**Objectives:**
+- Initialize Android Studio project with Gradle configuration
+- Configure all dependencies (Compose, Room, Hilt, FFmpeg, etc.)
+- Set up project structure and module organization
+- Implement Dependency Injection with Hilt
+- Create base classes and interfaces
+- Set up SQLite database schema
+- Configure build configurations (debug/release)
+
+**Deliverable:** Working app skeleton with proper navigation structure and DI setup
+
+**Key Files Generated:**
+- build.gradle.kts (root & app)
+- settings.gradle.kts
+- AndroidManifest.xml
+- AppModule.kt, DatabaseModule.kt, RepositoryModule.kt
+- ProjectEntity.kt, ProjectDao.kt
+- AppDatabase.kt
+
+---
+
+### Phase 2: Core DSL Engine (Week 2-3)
+**Duration:** 10 days
+**Objectives:**
+- Implement DSL Lexer (tokenization)
+- Build DSL Parser (AST construction)
+- Create validators (syntax & semantic checking)
+- Build Shape builders (circle, rectangle, polygon, line, bezier, ellipse, path, text)
+- Implement keyframe parser and builder
+- Create effect builders for all 30+ effects
+- Add error recovery and helpful error messages
+- Implement DSL AST data structures
+
+**Deliverable:** Complete DSL parsing with robust error reporting and line-specific error messages
+
+**Key Files Generated:**
+- DslLexer.kt
+- DslParser.kt
+- DslValidator.kt
+- DslAst.kt
+- ShapeBuilder.kt
+- EffectBuilder.kt
+- KeyframeBuilder.kt
+- All effect-specific classes
+
+---
+
+### Phase 3: Animation Engine (Week 3-4)
+**Duration:** 8 days
+**Objectives:**
+- Implement 12+ easing functions (linear, ease-in, ease-out, ease-in-out, cubic-bezier, etc.)
+- Build keyframe interpolator with smooth motion
+- Create frame calculator for timeline
+- Implement animation timeline management
+- Build animation state machine
+- Create animated object registry
+- Implement keyframe caching for performance
+
+**Deliverable:** Smooth keyframe-based animations with all easing functions working
+
+**Key Files Generated:**
+- EasingFunctions.kt
+- Interpolator.kt
+- KeyframeInterpolator.kt
+- FrameCalculator.kt
+- AnimationEngine.kt
+
+---
+
+### Phase 4: Rendering Engine (Week 4-5)
+**Duration:** 8 days
+**Objectives:**
+- Set up OpenGL ES 3.0 rendering context
+- Implement 2D shape rendering (canvas fallback)
+- Build 3D perspective transform system
+- Implement text rendering with font support
+- Create gradient rendering (linear, radial, angular)
+- Implement z-ordering and layering
+- Build double buffering for smooth preview
+- Optimize rendering pipeline
+
+**Deliverable:** Real-time preview canvas at 360p @ 12fps with all shapes and gradients
+
+**Key Files Generated:**
+- Canvas2DRenderer.kt
+- OpenGLRenderer.kt
+- ShapeRenderer.kt
+- TextRenderer.kt
+- GradientRenderer.kt
+- vertex_shader.glsl
+- fragment_shader.glsl
+
+---
+
+### Phase 5: Effects System (Week 5-6)
+**Duration:** 8 days
+**Objectives:**
+- Implement opacity/alpha effects
+- Build rotation effects (2D and 3D on X/Y/Z axes)
+- Create blur effects (Gaussian, directional, motion blur)
+- Implement shadow and glow effects (drop shadow, outer glow, inner glow)
+- Build color effects (hue shift, saturation, brightness/contrast, color grading, tint, wash)
+- Implement distortion effects (chromatic, pixelation, posterization, film grain)
+- Build masking and blending system (multiply, screen, overlay, etc.)
+- Create transform effects (position, scale, skew, shear, speed ramping)
+- Implement effect composition and stacking
+
+**Deliverable:** All 30+ effects fully functional and composable
+
+**Key Files Generated:**
+- OpacityEffect.kt, BlurEffect.kt, RotationEffect.kt
+- GlowEffect.kt, ShadowEffect.kt
+- ColorEffect.kt (handles 6+ color operations)
+- BlendModeEffect.kt, MaskingEffect.kt
+- MotionBlurEffect.kt, DistortionEffect.kt
+- TransformEffect.kt, EffectFactory.kt
+- EffectRenderer.kt
+
+---
+
+### Phase 6: Project Management (Week 6-7)
+**Duration:** 8 days
+**Objectives:**
+- Implement .codm file format (JSON + base64 thumbnail)
+- Build project CRUD operations (create, read, update, delete)
+- Create project listing and filtering
+- Implement auto-save system (debounced every 2 seconds)
+- Build project duplication and renaming
+- Implement thumbnail generation from canvas
+- Create project file encryption/compression (optional)
+- Build project recovery system
+
+**Deliverable:** Full project lifecycle management with auto-save and thumbnail preview
+
+**Key Files Generated:**
+- ProjectRepository.kt, ProjectRepositoryImpl.kt
+- CodmFileHandler.kt
+- ProjectFileManager.kt
+- ThumbnailGenerator.kt
+- SaveProjectUseCase.kt, LoadProjectUseCase.kt
+- DeleteProjectUseCase.kt, DuplicateProjectUseCase.kt
+
+---
+
+### Phase 7: Editor UI - Part 1 (Week 7-8)
+**Duration:** 8 days
+**Objectives:**
+- Build Home/Dashboard screen with project list
+- Create New Project dialog (canvas size, fps, duration selection)
+- Implement project card with thumbnail and metadata
+- Build project context menu (open, rename, duplicate, delete)
+- Create Editor main layout structure
+- Implement top bar with project name and back button
+- Build DSL editor panel with syntax highlighting
+- Create line numbers and error highlighting
+
+**Deliverable:** Complete UI screens for home and editor with layouts
+
+**Key Files Generated:**
+- HomeScreen.kt
+- EditorScreen.kt
+- ProjectCard.kt
+- ProjectListView.kt
+- ProjectContextMenu.kt
+- NewProjectDialog.kt
+- DslEditor.kt
+- SyntaxHighlighter.kt
+- TopAppBar.kt, HamburgerMenu.kt
+
+---
+
+### Phase 8: Editor UI - Part 2 & Timeline (Week 8-9)
+**Duration:** 8 days
+**Objectives:**
+- Build canvas area layout
+- Create interactive timeline bar with scrubbing
+- Implement keyframe markers on timeline
+- Build playback controls (play, pause, stop, speed)
+- Create properties panel and effect controls
+- Build keyframe editor UI
+- Implement object selection and highlighting
+- Create layers panel
+
+**Deliverable:** Full editor interface with interactive timeline and properties panel
+
+**Key Files Generated:**
+- AnimationCanvas.kt
+- CanvasView.kt
+- TimelineBar.kt
+- KeyframeMarker.kt
+- PlaybackControls.kt
+- ObjectPropertiesPanel.kt
+- EffectControls.kt
+- KeyframeEditor.kt
+
+---
+
+### Phase 9: Preview & Playback (Week 9-10)
+**Duration:** 8 days
+**Objectives:**
+- Implement full-screen preview mode
+- Build playback controls (play, pause, frame step)
+- Create speed controls (0.25x, 0.5x, 1x, 2x, 4x)
+- Implement frame-by-frame scrubbing
+- Build loop toggle
+- Create performance monitoring display
+- Implement preview at 480p @ 30fps
+- Add information overlay (fps, resolution, frame number)
+
+**Deliverable:** Full-featured preview playback with all controls
+
+**Key Files Generated:**
+- PreviewScreen.kt
+- PreviewViewModel.kt
+- CanvasViewModel.kt
+- PerformanceMonitor.kt
+
+---
+
+### Phase 10: Video Export System (Week 10-11)
+**Duration:** 8 days
+**Objectives:**
+- Integrate FFmpeg via ffmpeg-kit-android
+- Implement frame sequence generation
+- Build MP4 export (1080p, 2K, 4K @ 30fps, 60fps)
+- Build MKV export with codec selection
+- Build GIF export with color reduction and dithering
+- Create export settings dialog
+- Implement export progress tracking
+- Build export queue manager
+- Add file save and notification system
+
+**Deliverable:** Multi-format video export with progress tracking and quality options
+
+**Key Files Generated:**
+- VideoExporter.kt
+- GifExporter.kt
+- FFmpegProcessor.kt
+- FrameSequenceGenerator.kt
+- ExportQueueManager.kt
+- ExportScreen.kt
+- ExportViewModel.kt
+- ExportDialog.kt
+
+---
+
+### Phase 11: Advanced Features & Polish (Week 11-12)
+**Duration:** 8 days
+**Objectives:**
+- Implement settings/preferences screen
+- Build theme support (light/dark)
+- Add performance optimization (memory management)
+- Implement undo/redo system
+- Add keyboard shortcuts
+- Build error handling and user feedback
+- Create app notifications system
+- Implement permission handling
+- Build battery optimization
+
+**Deliverable:** Polished feature set with settings and optimizations
+
+**Key Files Generated:**
+- SettingsScreen.kt
+- SettingsViewModel.kt
+- SettingsDialog.kt
+- AppPreferences.kt
+- Theme.kt, Color.kt
+
+---
+
+### Phase 12: Testing, Documentation & Release (Week 12-13)
+**Duration:** 8 days
+**Objectives:**
+- Write comprehensive unit tests (DSL, animation, effects)
+- Write integration tests (full animation pipeline)
+- Performance profiling and optimization
+- Memory leak detection and fixes
+- Create comprehensive documentation
+- Build API reference
+- Final bug fixes and polish
+- Prepare for release
+
+**Deliverable:** Tested, optimized, production-ready app
+
+**Key Files Generated:**
+- DslParserTest.kt, InterpolatorTest.kt
+- EasingFunctionsTest.kt, AnimationEngineTest.kt
+- EditorScreenTest.kt, ExportTest.kt
+- Documentation files (DSL_SPECIFICATION.md, ARCHITECTURE.md, etc.)
+
+---
+
+## 8. DEPENDENCY LIST
+
+### Core Dependencies
+```gradle
+// Kotlin & Coroutines
+implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.20'
+implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
+
+// Jetpack Compose
+implementation platform('androidx.compose:compose-bom:2024.06.00')
+implementation 'androidx.compose.ui:ui'
+implementation 'androidx.compose.material3:material3'
+implementation 'androidx.compose.runtime:runtime'
+implementation 'androidx.compose.foundation:foundation'
+
+// Android X
+implementation 'androidx.activity:activity-compose:1.8.1'
+implementation 'androidx.appcompat:appcompat:1.6.1'
+implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0'
+
+// Room Database
+implementation 'androidx.room:room-runtime:2.6.1'
+implementation 'androidx.room:room-ktx:2.6.1'
+kapt 'androidx.room:room-compiler:2.6.1'
+
+// Hilt DI
+implementation 'com.google.dagger:hilt-android:2.51'
+kapt 'com.google.dagger:hilt-compiler:2.51'
+implementation 'androidx.hilt:hilt-lifecycle-viewmodel:1.0.0-alpha03'
+
+// JSON Serialization
+implementation 'com.google.code.gson:gson:2.10.1'
+
+// FFmpeg
+implementation 'com.arthenica:ffmpeg-kit-android:6.0-gpl'
+
+// Testing
+testImplementation 'junit:junit:4.13.2'
+testImplementation 'org.mockito.kotlin:mockito-kotlin:5.1.0'
+androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+
+// Logging
+implementation 'com.jakewharton.timber:timber:5.0.1'
+```
+
+---
+
+## 9. KEY IMPLEMENTATION NOTES
+
+### DSL Parser Strategy
+- **Two-pass parsing:** Lexer → Parser → AST → Validator
+- **Error recovery:** Continue parsing after errors to report multiple issues
+- **Context-aware:** Track current object, effect, keyframe context
+
+### Animation Engine Strategy
+- **Lazy computation:** Only calculate visible frames
+- **Frame caching:** Cache computed frame data
+- **Smooth interpolation:** Use cubic Bezier for easing
+
+### Rendering Pipeline
+- **Double buffering:** Render to offscreen buffer first
+- **Z-sorting:** Sort by z-index before rendering
+- **Clipping:** Only render visible area
+
+### Performance Optimizations
+- Preview: 360p @ 12fps (aggressive downsampling)
+- Export: Full resolution with progressive codec
+- Effect rendering: GPU acceleration via OpenGL
+- Object pooling: Reuse animated object instances
+
+### Storage Strategy
+- .codm files: JSON format with embedded thumbnail
+- Location: `/data/data/com.codmation/projects/`
+- Auto-save: Debounced every 2 seconds
+- Compression: Optional gzip compression for large files
+
+---
+
+## 10. SUCCESS CRITERIA
+
+✅ DSL parses all shapes, effects, and keyframes without errors  
+✅ Real-time preview renders at 360p @ 12fps consistently  
+✅ Timeline scrubbing responds in < 100ms  
+✅ Auto-save completes without UI blocking  
+✅ Video export completes in 30-60 seconds for 480p  
+✅ App handles 2-minute animations without crashes  
+✅ Projects save/load correctly in .codm format  
+✅ All 30+ effects render with correct visual output  
+✅ Export quality matches settings (resolution, fps, format)  
+✅ App runs smoothly on Android 10+ with 3-4GB RAM  
+
+---
+
+## 11. NEXT STEPS FOR CODE GENERATION
+
+**Status:** ✅ Project State Document Complete
+
+**Ready to proceed with Phase 1 code generation:**
+
+1. Copy this entire document
+2. Paste into a **new chat window**
+3. Request: "Generate all code files for CODMATION Phase 1 starting with project setup and infrastructure"
+4. Files will be generated in copy-paste format with exact paths
+
+**Total files to generate:** ~540-630 complete, production-ready files
+
+---
+
+**Document Version:** 1.0  
+**Last Updated:** 2026-06-13  
+**Status:** ✅ Ready for Code Generation
