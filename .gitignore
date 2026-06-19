@@ -1,0 +1,95 @@
+# Gradle files
+.gradle/
+build/
+*.gradle.lock
+
+# Android Studio
+.idea/
+.DS_Store
+*.iml
+*.iws
+*.ipr
+*.apk
+*.ap_
+*.dex
+
+# Local configuration file (SDK path, etc)
+local.properties
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle cache
+.gradle
+
+# Android Studio capture folder
+captures/
+
+# Android Studio
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+.idea/codeStyles/
+.idea/caches/
+.idea/modules.xml
+
+# Intellij
+*.iml
+.idea/
+
+# MacOS
+.DS_Store
+
+# Project files
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE
+vscode/
+.vscode/
+
+# Misc
+*.log
+*.swp
+*.swo
+*~
+.classpath
+.project
+.settings
+
+# NDK
+obj/
+libs/
+
+# Build outputs
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Signing files
+*.keystore
+*.jks
+*.properties
+!gradle.properties
+
+# Test reports
+test-results/
+reports/
+
+# Lint reports
+lint-results.xml
+lint-results.html
+
+# Profiler data
+*.trace
+*.prof
